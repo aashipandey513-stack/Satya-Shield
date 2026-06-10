@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="frontend/public/logo.png" alt="Satya-Shield Logo" width="200"/>
+</p>
+
 # Satya-Shield 🛡️
 
 Satya-Shield is a real-time, multimodal synthetic media detection system. This repository contains a working Minimum Viable Product (MVP) designed to extract mathematical acoustic features and spatial-temporal anomalies to identify AI-generated deepfakes and voice clones.
