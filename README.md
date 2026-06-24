@@ -37,10 +37,10 @@ Unlike standard wrapper applications, Satya-Shield processes raw data using a cu
 ## 📊 Forensic Visualizations
 *The dashboard provides an immediate breakdown of media authenticity, utilizing granular acoustic data to justify threat verdicts.*
 
-![Satya-Shield UI Dashboard](./assets/ui-dashboard.jpeg)
+![Satya-Shield UI Dashboard](frontend/src/assets/ui-dashboard.jpeg)
 *Figure 1: Real-time Forensic Dashboard*
 
-![Acoustic Fingerprint Graphs](./assets/graphs-analysis.jpeg)
+![Acoustic Fingerprint Graphs](frontend/src/assets/graphs-analysis.jpeg)
 *Figure 2: Acoustic MFCC & Chroma Tonal Mapping*
 
 ## ⚙️ Installation & Setup
