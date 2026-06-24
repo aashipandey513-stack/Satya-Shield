@@ -1,8 +1,9 @@
 import os
 import numpy as np
 import librosa
+import onnxruntime
 import onnxruntime as ort
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
@@ -18,7 +19,7 @@ app.add_middleware(
 
 # Global variables to store our deep learning runtime engine
 MODEL_PATH = "models/wav2vec_fake_detector.onnx"
-ort_session = None
+ort_session = onnxruntime.InferenceSession("models/satya_custom_v1.onnx")
 
 @app.on_event("startup")
 async def load_model():
@@ -40,68 +41,89 @@ def read_root():
     return {"status": "online", "engine": "Satya-Shield Core V2 (Wav2Vec2.0 ONNX)"}
 
 @app.post("/scan")
-async def scan_audio(file: UploadFile = File(...)):
+async def scan_audio(
+    file: UploadFile = File(...),
+    minCentroid: float = Form(1600.0),
+    minZcr: float = Form(0.085),
+    maxMfccVar: float = Form(15000.0)
+):
     global ort_session
     try:
         # 1. Read incoming audio file into memory
         audio_bytes = await file.read()
         
-        # Save bytes temporarily to read with librosa
         temp_filename = f"temp_{file.filename}"
         with open(temp_filename, "wb") as f:
             f.write(audio_bytes)
             
-        # 2. Downsample/normalize to standard 16kHz mono audio (required by Wav2Vec2)
+        # 2. Downsample/normalize to standard 16kHz mono audio
         y, sr = librosa.load(temp_filename, sr=16000, mono=True)
         
-        # Clean up the temporary file immediately
         if os.path.exists(temp_filename):
             os.remove(temp_filename)
             
-        # 3. Shape Alignment: Crop or pad to exactly 1 second (16000 amplitude values)
+        # --- VISUAL FEATURE EXTRACTION ---
+        mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
+        chroma = librosa.feature.chroma_stft(y=y, sr=sr)
+        mfcc_summary = np.mean(mfccs, axis=1).tolist()
+        chroma_summary = np.mean(chroma, axis=1).tolist()
+
+        # --- NEW: HEURISTIC FIREWALL METRICS ---
+        # Calculate the actual physical traits of the audio
+        actual_centroid = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
+        actual_zcr = float(np.mean(librosa.feature.zero_crossing_rate(y)))
+        actual_mfcc_var = float(np.var(mfccs))
+            
+        # 3. Shape Alignment for AI: Crop or pad to exactly 1 second
         target_samples = 16000
         if len(y) > target_samples:
             y = y[:target_samples]
         else:
             y = np.pad(y, (0, target_samples - len(y)), mode='constant')
             
-        # Add batch dimension to create exact tensor shape: [1, 16000]
         input_tensor = y.reshape(1, target_samples).astype(np.float32)
         
-        # 4. Check if the AI brain is active, otherwise use a safe backup generator
+        # 4. Neural Network Pass
         if ort_session is not None:
-            # Feed input tensor into the primary node of the ONNX graph
             input_name = ort_session.get_inputs()[0].name
             ort_inputs = {input_name: input_tensor}
-            
-            # Execute Forward Pass through deep transformer layers
             outputs = ort_session.run(None, ort_inputs)
-            
-            # Safely extract scalar value regardless of array structure dimensions
             deepfake_probability = float(outputs[0].item())
         else:
-            # Fallback heuristic: Compute standard deviation signature to generate pseudo-probability
-            print("⚠️ Running Fallback Engine...")
             feature_hash = float(np.std(input_tensor))
             deepfake_probability = (feature_hash * 100) % 1.0
 
-        # 5. Calculate Final Assessment Matrix
+        # 5. Base Assessment
         confidence = round(max(deepfake_probability, 1.0 - deepfake_probability) * 100, 2)
         verdict = "THREAT" if deepfake_probability > 0.5 else "SAFE"
         
+        # --- NEW: FIREWALL OVERRIDE LOGIC ---
+        # If the AI thinks it is safe, but the physics violate your UI sliders:
+        override_triggered = False
+        if verdict == "SAFE":
+            if actual_centroid < minCentroid or actual_zcr < minZcr or actual_mfcc_var > maxMfccVar:
+                override_triggered = True
+                verdict = "THREAT"
+                confidence = "MANUAL OVERRIDE"
+
         return {
             "status": "success",
             "verdict": verdict,
-            "confidence": f"{confidence}%",
+            "confidence": f"{confidence}%" if not override_triggered else confidence,
             "metrics": {
                 "probability": round(deepfake_probability, 4),
                 "sample_rate": int(sr),
-                "duration_seconds": 1.0
+                "centroid": round(actual_centroid, 2),
+                "zcr": round(actual_zcr, 4),
+                "mfcc_variance": round(actual_mfcc_var, 2)
+            },
+            "visuals": {
+                "mfcc": mfcc_summary,
+                "chroma": chroma_summary
             }
         }
         
     except Exception as e:
-        # Capture and log errors directly to terminal without dropping server thread
         print(f"\n🔥 AI PIPELINE ERROR: {e}\n")
         return {
             "status": "error",

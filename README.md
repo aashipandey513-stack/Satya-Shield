@@ -23,12 +23,25 @@ Unlike standard wrapper applications, Satya-Shield processes raw data using a cu
 3. **Acoustic Extraction Engine:** Utilizes `librosa` to break down audio waves into Mel-frequency cepstral coefficients (MFCCs) and analyze Spectral Centroids to detect the high-frequency smoothing characteristic of synthetic voices.
 4. **Visual Variance Engine:** Utilizes `OpenCV` to deconstruct video containers frame-by-frame, calculating Laplacian edge variances to detect the micro-jitters and boundary blurring typical of generative face-swaps.
 
-### 🛠️ Tech Stack
+## 🚀 Recent Enhancements
+- **Custom-Trained Inference:** Successfully migrated from generic base models to a custom-fine-tuned Wav2Vec2 architecture, optimized via ONNX Runtime for production-grade speed and precision.
+- **Optimized Model Pipeline:** Implemented seamless cloud-to-local deployment using `optimum-cli` and `gdown`, ensuring efficient handling of complex neural weights.
+- **Enhanced Forensic Dashboard:** Upgraded UI to visualize real-time acoustic fingerprints, including **MFCC spectral mapping** and **Chroma tonal pitch analysis**, providing transparent, explainable detection verdicts.
+
+## 🛠️ Tech Stack
 * **Frontend:** React.js, Tailwind CSS v4, Vite
-* **Backend:** Python, FastAPI, Uvicorn, Python-Multipart
+* **Backend:** Python, FastAPI, Uvicorn
+* **AI/Deep Learning:** PyTorch, Wav2Vec2, ONNX Runtime, Optimum
 * **Audio/Signal Processing:** Librosa, NumPy
-* **Computer Vision:** OpenCV
-* **Deep Learning Runtime:** ONNX Runtime
+
+## 📊 Forensic Visualizations
+*The dashboard provides an immediate breakdown of media authenticity, utilizing granular acoustic data to justify threat verdicts.*
+
+![Satya-Shield UI Dashboard](./assets/ui-dashboard.jpeg)
+*Figure 1: Real-time Forensic Dashboard*
+
+![Acoustic Fingerprint Graphs](./assets/graphs-analysis.jpeg)
+*Figure 2: Acoustic MFCC & Chroma Tonal Mapping*
 
 ## ⚙️ Installation & Setup
 
