@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+venv/
+__pycache__/
+.DS_Store
+backend/models/satya_custom_v1.onnx
